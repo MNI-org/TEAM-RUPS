@@ -102,7 +102,7 @@ class CircuitGraph {
             let next = this.sameNode(comp.start, current) ? comp.end : comp.start;
             if (!next) continue;
 
-            if(next == target && visitedComps.size < 2) continue;
+            if(next === target && visitedComps.size < 2) continue;
 
             if (next.type === 'switch' && !next.is_on) continue;
 
