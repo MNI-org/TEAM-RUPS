@@ -33,6 +33,9 @@ export default class WorkspaceScene extends Phaser.Scene {
   create() {
     const { width, height } = this.cameras.main;
 
+    //d key za delete
+    this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+
     // površje mize
     const desk = this.add.rectangle(0, 0, width, height, 0xe0c9a6).setOrigin(0);
     const gridGraphics = this.add.graphics();
@@ -324,20 +327,19 @@ export default class WorkspaceScene extends Phaser.Scene {
     return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled);
   }
 
-  updateLogicNodePositions(component) {
+  updateLogicNodePositions(component) { //to je po move
     const comp = component.getData('logicComponent');
     if (!comp) return;
-
     // derive local offsets: prefer comp-local offsets, else use half display
     const halfW = 40;
     const halfH = 40;
-
     const localStart = comp.localStart || { x: -halfW, y: 0 };
     const localEnd = comp.localEnd || { x: halfW, y: 0 };
 
     // get container angle in radians (Phaser keeps both .angle and .rotation)
     const theta = (typeof component.rotation === 'number' && component.rotation) ? component.rotation : Phaser.Math.DegToRad(component.angle || 0);
     console.log("rotation:",theta,component.rotation,component.angle,comp);
+
     const cos = Math.cos(theta);
     const sin = Math.sin(theta);
     const rotate = (p) => ({
@@ -635,6 +637,8 @@ export default class WorkspaceScene extends Phaser.Scene {
             ease: 'Cubic.easeOut',
           });
         }
+      }else if(this.keyD.isDown){
+        component.destroy()
       }
     });
 
