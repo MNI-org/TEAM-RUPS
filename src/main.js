@@ -12,7 +12,7 @@ import ScoreboardScene from './scenes/scoreboardScene';
 import WorkspaceScene from './scenes/workspaceScene';
 
 const config = {
-  type: Phaser.AUTO,            
+  type: Phaser.AUTO,
   width: window.innerWidth,                    
   height: window.innerHeight,                   
   backgroundColor: '#f4f6fa',    
