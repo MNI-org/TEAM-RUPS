@@ -337,7 +337,7 @@ export default class WorkspaceScene extends Phaser.Scene {
 
     // get container angle in radians (Phaser keeps both .angle and .rotation)
     const theta = (typeof component.rotation === 'number' && component.rotation) ? component.rotation : Phaser.Math.DegToRad(component.angle || 0);
-
+    console.log("rotation:",theta,component.rotation,component.angle,comp);
     const cos = Math.cos(theta);
     const sin = Math.sin(theta);
     const rotate = (p) => ({
@@ -376,7 +376,7 @@ export default class WorkspaceScene extends Phaser.Scene {
 
   createComponent(x, y, type, color) {
     const component = this.add.container(x, y);
-
+    this.input.mouse.disableContextMenu();
     let comp = null;
     let componentImage;
     let id;
@@ -617,19 +617,24 @@ export default class WorkspaceScene extends Phaser.Scene {
       });
     });
 
-    component.on('pointerdown', () => {
-      if (!component.getData('isInPanel')) {
-        const currentRotation = component.getData('rotation');
-        const newRotation = (currentRotation + 90) % 360;
-        component.setData('rotation', newRotation);
-        component.setData('isRotated', !component.getData('isRotated'));
+    component.on('pointerdown', (pointer) => {
+      if (pointer.rightButtonDown()) {
+        if (!component.getData('isInPanel')) {
+          const currentRotation = component.getData('rotation');
+          let newRotation=90
+          if(currentRotation===90)
+            newRotation=0
+          console.log(newRotation)
+          component.setData('rotation', newRotation);
+          component.setData('isRotated', !component.getData('isRotated'));
 
-        this.tweens.add({
-          targets: component,
-          angle: newRotation,
-          duration: 150,
-          ease: 'Cubic.easeOut',
-        });
+          this.tweens.add({
+            targets: component,
+            angle: newRotation,
+            duration: 150,
+            ease: 'Cubic.easeOut',
+          });
+        }
       }
     });
 
@@ -655,12 +660,12 @@ export default class WorkspaceScene extends Phaser.Scene {
     }
 
     // je pravilna simulacija 
-    if (this.sim == undefined) {
+    if (this.sim === undefined) {
       this.checkText.setText('Zaženi simlacijo');
       return;
     }
 
-    if (this.sim == false) {
+    if (this.sim === false) {
       this.checkText.setText('Električni krog ni sklenjen. Preveri kako si ga sestavil');
       return;
     }
