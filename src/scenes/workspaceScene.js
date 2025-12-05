@@ -686,48 +686,40 @@ export default class WorkspaceScene extends Phaser.Scene {
             const isInPanel = component.x < 200;
 
             if (isInPanel && !component.getData('isInPanel')) {
+                // case: dragged back to panel -> just destroy the copy
                 component.destroy();
             } else if (!isInPanel && component.getData('isInPanel')) {
-                const snapped = this.snapToGrid(component.x, component.y);
-                component.x = snapped.x;
-                component.y = snapped.y;
-
-                const comp = component.getData('logicComponent');
-                if (comp) {
-                    console.log('Component: ' + comp);
-                    this.graph.addComponent(comp);
-
-                    if (comp.start) this.graph.addNode(comp.start);
-                    if (comp.end) this.graph.addNode(comp.end);
-                }
-
-                this.updateLogicNodePositions(component);
-
-                component.setData('isRotated', false);
+                // case: new component dragged from panel to workspace
                 component.setData('isInPanel', false);
 
-                this.createComponent(
-                    component.getData('originalX'),
-                    component.getData('originalY'),
-                    component.getData('type'),
-                    component.getData('color')
-                );
+                // hide popup when component is used
+                this.infoWindow.setVisible(false);
 
-                this.placedComponents.push(component);
+                // create a fresh panel item to replace the one you used
+                const origX = component.getData('originalX');
+                const origY = component.getData('originalY');
+                const type = component.getData('type');
+                const color = component.getData('color');
+                this.createComponent(origX, origY, type, color);
 
-            } else if (!component.getData('isInPanel')) {
+                // snap to grid and register in placedComponents / graph
                 const snapped = this.snapToGrid(component.x, component.y);
                 component.x = snapped.x;
                 component.y = snapped.y;
 
+                this.placedComponents.push(component);
                 this.updateLogicNodePositions(component);
-
+            } else if (!component.getData('isInPanel')) {
+                // case: moving an already placed component
+                const snapped = this.snapToGrid(component.x, component.y);
+                component.x = snapped.x;
+                component.y = snapped.y;
+                this.updateLogicNodePositions(component);
             } else {
+                // case: still in panel -> reset position
                 component.x = component.getData('originalX');
                 component.y = component.getData('originalY');
-
                 this.updateLogicNodePositions(component);
-
             }
 
             this.time.delayedCall(500, () => {
