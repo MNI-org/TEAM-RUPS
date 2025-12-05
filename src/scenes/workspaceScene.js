@@ -43,9 +43,31 @@ export default class WorkspaceScene extends Phaser.Scene {
     create() {
         const { width, height } = this.cameras.main;
 
-        //d key za delete
+        // keys
         this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
         this.keyShift = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+        this.keyDelete = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DELETE);
+
+        // selection
+        this.selectedComponent = null;
+
+        // delete on Delete key
+        this.input.keyboard.on('keydown-DELETE', () => {
+            if (!this.selectedComponent || this.selectedComponent.getData('isInPanel')) return;
+
+            const comp = this.selectedComponent.getData('logicComponent');
+            if (comp) {
+                if (this.graph.removeComponent) this.graph.removeComponent(comp);
+                if (comp.start && this.graph.removeNode) this.graph.removeNode(comp.start);
+                if (comp.end && this.graph.removeNode) this.graph.removeNode(comp.end);
+            }
+
+            const idx = this.placedComponents.indexOf(this.selectedComponent);
+            if (idx !== -1) this.placedComponents.splice(idx, 1);
+
+            this.selectedComponent.destroy();
+            this.selectedComponent = null;
+        });
 
         // root container for everything that should resize
         this.root = this.add.container(0, 0);
@@ -122,7 +144,7 @@ export default class WorkspaceScene extends Phaser.Scene {
         // build initial layout
         this.buildLayout(width, height);
 
-        // interval za simulacijo (kept as in your code)
+        // interval za simulacijo
         if (!this.intervalSet) {
             setInterval(() => {
                 if (this.runSimulacija)
@@ -184,7 +206,7 @@ export default class WorkspaceScene extends Phaser.Scene {
 
         const maxPromptWidth = Math.min(width - 220, 600);
 
-// checkText on top (status / error messages)
+        // checkText on top
         this.checkText = this.add.text(
             width / 2,
             height - 90,
@@ -203,7 +225,7 @@ export default class WorkspaceScene extends Phaser.Scene {
             .setOrigin(0.5);
         root.add(this.checkText);
 
-// promptText at the very bottom (task description)
+        // promptText at bottom
         this.promptText = this.add.text(
             width / 2,
             height - 40,
@@ -222,7 +244,7 @@ export default class WorkspaceScene extends Phaser.Scene {
             .setOrigin(0.5);
         root.add(this.promptText);
 
-        // buttons (unchanged logic, just example shape)
+        // buttons
         const buttonWidth = 180;
         const buttonHeight = 45;
         const cornerRadius = 10;
@@ -330,7 +352,7 @@ export default class WorkspaceScene extends Phaser.Scene {
         ).setOrigin(0.5);
         root.add(topText);
 
-        // back button (kept, just positioned relative to left top)
+        // back button
         const backButton = this.add.text(16, 14, '↩ Nazaj', {
             fontFamily: 'Arial',
             fontSize: '20px',
@@ -391,7 +413,6 @@ export default class WorkspaceScene extends Phaser.Scene {
         const gridSize = this.gridSize;
         const startX = 200;
 
-        // komponeta se postavi na presečišče
         const snappedX = Math.round((x - startX) / gridSize) * gridSize + startX;
         const snappedY = Math.round(y / gridSize) * gridSize;
 
@@ -404,18 +425,19 @@ export default class WorkspaceScene extends Phaser.Scene {
         return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled);
     }
 
-    updateLogicNodePositions(component) { //to je po move
+    updateLogicNodePositions(component) {
         const comp = component.getData('logicComponent');
         if (!comp) return;
-        // derive local offsets: prefer comp-local offsets, else use half display
+
         const halfW = 40;
         const halfH = 40;
         const localStart = comp.localStart || { x: -halfW, y: 0 };
         const localEnd = comp.localEnd || { x: halfW, y: 0 };
 
-        // get container angle in radians (Phaser keeps both .angle and .rotation)
-        const theta = (typeof component.rotation === 'number' && component.rotation) ? component.rotation : Phaser.Math.DegToRad(component.angle || 0);
-        console.log("Component:", comp);
+        const theta = (typeof component.rotation === 'number' && component.rotation)
+            ? component.rotation
+            : Phaser.Math.DegToRad(component.angle || 0);
+        console.log('Component:', comp);
 
         const cos = Math.cos(theta);
         const sin = Math.sin(theta);
@@ -446,7 +468,6 @@ export default class WorkspaceScene extends Phaser.Scene {
             this.graph.addNode(comp.end);
         }
 
-        // debug dots are top-level objects (not children). update their positions
         const startDot = component.getData('startDot');
         const endDot = component.getData('endDot');
         if (startDot && comp.start) { startDot.x = comp.start.x; startDot.y = comp.start.y; }
@@ -462,7 +483,7 @@ export default class WorkspaceScene extends Phaser.Scene {
 
         switch (type) {
             case 'baterija':
-                id = "bat_" + this.getRandomInt(1000, 9999);
+                id = 'bat_' + this.getRandomInt(1000, 9999);
                 comp = new Battery(
                     id,
                     new Node(id + '_start', -40, 0),
@@ -477,14 +498,14 @@ export default class WorkspaceScene extends Phaser.Scene {
                     .setDisplaySize(100, 100);
                 component.add(componentImage);
 
-                comp.container = component;       // reference to Phaser container
-                comp.image = componentImage;      // reference to Phaser image
+                comp.container = component;
+                comp.image = componentImage;
 
                 component.setData('logicComponent', comp);
                 break;
 
             case 'upor':
-                id = "res_" + this.getRandomInt(1000, 9999);
+                id = 'res_' + this.getRandomInt(1000, 9999);
                 comp = new Resistor(
                     id,
                     new Node(id + '_start', -40, 0),
@@ -499,14 +520,14 @@ export default class WorkspaceScene extends Phaser.Scene {
                     .setDisplaySize(100, 100);
                 component.add(componentImage);
 
-                comp.container = component;       // reference to Phaser container
-                comp.image = componentImage;      // reference to Phaser image
+                comp.container = component;
+                comp.image = componentImage;
 
                 component.setData('logicComponent', comp);
                 break;
 
             case 'svetilka':
-                id = "bulb_" + this.getRandomInt(1000, 9999);
+                id = 'bulb_' + this.getRandomInt(1000, 9999);
                 comp = new Bulb(
                     id,
                     new Node(id + '_start', -40, 0),
@@ -520,18 +541,18 @@ export default class WorkspaceScene extends Phaser.Scene {
                     .setDisplaySize(100, 100);
                 component.add(componentImage);
 
-                comp.container = component;       // reference to Phaser container
-                comp.image = componentImage;      // reference to Phaser image
+                comp.container = component;
+                comp.image = componentImage;
 
                 component.setData('logicComponent', comp);
                 break;
 
             case 'stikalo-on':
-                id = "switch_" + this.getRandomInt(1000, 9999);
+                id = 'switch_' + this.getRandomInt(1000, 9999);
                 comp = new Switch(
                     id,
-                    new Node(id + "_start", -40, 0),
-                    new Node(id + "_end", 40, 0),
+                    new Node(id + '_start', -40, 0),
+                    new Node(id + '_end', 40, 0),
                     true
                 );
                 comp.type = 'switch';
@@ -542,18 +563,18 @@ export default class WorkspaceScene extends Phaser.Scene {
                     .setDisplaySize(100, 100);
                 component.add(componentImage);
 
-                comp.container = component;       // reference to Phaser container
-                comp.image = componentImage;      // reference to Phaser image
+                comp.container = component;
+                comp.image = componentImage;
 
                 component.setData('logicComponent', comp);
                 break;
 
             case 'stikalo-off':
-                id = "switch_" + this.getRandomInt(1000, 9999);
+                id = 'switch_' + this.getRandomInt(1000, 9999);
                 comp = new Switch(
                     id,
-                    new Node(id + "_start", -40, 0),
-                    new Node(id + "_end", 40, 0),
+                    new Node(id + '_start', -40, 0),
+                    new Node(id + '_end', 40, 0),
                     false
                 );
                 comp.type = 'switch';
@@ -564,14 +585,14 @@ export default class WorkspaceScene extends Phaser.Scene {
                     .setDisplaySize(100, 100);
                 component.add(componentImage);
 
-                comp.container = component;       // reference to Phaser container
-                comp.image = componentImage;      // reference to Phaser image
+                comp.container = component;
+                comp.image = componentImage;
 
                 component.setData('logicComponent', comp);
                 break;
 
             case 'žica':
-                id = "wire_" + this.getRandomInt(1000, 9999);
+                id = 'wire_' + this.getRandomInt(1000, 9999);
                 comp = new Wire(
                     id,
                     new Node(id + '_start', -40, 0),
@@ -585,21 +606,23 @@ export default class WorkspaceScene extends Phaser.Scene {
                     .setDisplaySize(100, 100);
                 component.add(componentImage);
 
-                comp.container = component;       // reference to Phaser container
-                comp.image = componentImage;      // reference to Phaser image
+                comp.container = component;
+                comp.image = componentImage;
 
                 component.setData('logicComponent', comp);
                 break;
+
             case 'ampermeter':
-                id = "ammeter_" + this.getRandomInt(1000, 9999);
+                id = 'ammeter_' + this.getRandomInt(1000, 9999);
                 componentImage = this.add.image(0, 0, 'ampermeter')
                     .setOrigin(0.5)
                     .setDisplaySize(100, 100);
                 component.add(componentImage);
                 component.setData('logicComponent', null);
                 break;
+
             case 'voltmeter':
-                id = "voltmeter_" + this.getRandomInt(1000, 9999);
+                id = 'voltmeter_' + this.getRandomInt(1000, 9999);
                 componentImage = this.add.image(0, 0, 'voltmeter')
                     .setOrigin(0.5)
                     .setDisplaySize(100, 100);
@@ -610,11 +633,9 @@ export default class WorkspaceScene extends Phaser.Scene {
 
         component.on('pointerover', () => {
             if (component.getData('isInPanel')) {
-                // prikaži info okno
                 const details = this.getComponentDetails(type);
                 this.infoText.setText(details);
 
-                // zraven komponente
                 this.infoWindow.x = x + 120;
                 this.infoWindow.y = y;
                 this.infoWindow.setVisible(true);
@@ -629,7 +650,6 @@ export default class WorkspaceScene extends Phaser.Scene {
             component.setScale(1);
         });
 
-        // Label
         const label = this.add.text(0, 30, type, {
             fontSize: '11px',
             color: '#fff',
@@ -641,7 +661,6 @@ export default class WorkspaceScene extends Phaser.Scene {
         component.setSize(70, 70);
         component.setInteractive({ draggable: true, useHandCursor: true });
 
-        // shrani originalno pozicijo in tip
         component.setData('originalX', x);
         component.setData('originalY', y);
         component.setData('type', type);
@@ -667,20 +686,17 @@ export default class WorkspaceScene extends Phaser.Scene {
             const isInPanel = component.x < 200;
 
             if (isInPanel && !component.getData('isInPanel')) {
-                // če je ob strani, se odstrani
                 component.destroy();
             } else if (!isInPanel && component.getData('isInPanel')) {
-                // s strani na mizo
                 const snapped = this.snapToGrid(component.x, component.y);
                 component.x = snapped.x;
                 component.y = snapped.y;
 
                 const comp = component.getData('logicComponent');
                 if (comp) {
-                    console.log("Component: " + comp);
+                    console.log('Component: ' + comp);
                     this.graph.addComponent(comp);
 
-                    // Add start/end nodes to graph if they exist
                     if (comp.start) this.graph.addNode(comp.start);
                     if (comp.end) this.graph.addNode(comp.end);
                 }
@@ -700,7 +716,6 @@ export default class WorkspaceScene extends Phaser.Scene {
                 this.placedComponents.push(component);
 
             } else if (!component.getData('isInPanel')) {
-                // na mizi in se postavi na mrežo
                 const snapped = this.snapToGrid(component.x, component.y);
                 component.x = snapped.x;
                 component.y = snapped.y;
@@ -708,7 +723,6 @@ export default class WorkspaceScene extends Phaser.Scene {
                 this.updateLogicNodePositions(component);
 
             } else {
-                // postavi se nazaj na originalno mesto
                 component.x = component.getData('originalX');
                 component.y = component.getData('originalY');
 
@@ -722,22 +736,30 @@ export default class WorkspaceScene extends Phaser.Scene {
         });
 
         component.on('pointerdown', (pointer) => {
+            // selection
+            if (!component.getData('isInPanel')) {
+                this.selectedComponent = component;
+            }
+
             if (this.runSimulacija) {
-                // za karkoli je interactive med simulacijo
-                // console.log("comp",component.data.list.logicComponent.is_on);
                 switch (component.data.list.logicComponent?.type) {
-                    case "switch":
-                        component.data.list.logicComponent.is_on = !component.data.list.logicComponent.is_on;
-                        const newTexture = component.data.list.logicComponent.is_on ? 'stikalo-on' : 'stikalo-off';
+                    case 'switch':
+                        component.data.list.logicComponent.is_on =
+                            !component.data.list.logicComponent.is_on;
+                        const newTexture = component.data.list.logicComponent.is_on
+                            ? 'stikalo-on'
+                            : 'stikalo-off';
                         component.data.list.logicComponent.image.setTexture(newTexture);
                         break;
                 }
+                return;
             }
-            else if (pointer.rightButtonDown()) {
-                if (!component.getData('isInPanel')) {
 
+            // rotate on right click
+            if (pointer.rightButtonDown()) {
+                if (!component.getData('isInPanel')) {
                     const currentRotation = component.getData('rotation');
-                    let newRotation = currentRotation === 90 ? 0 : 90;
+                    const newRotation = currentRotation === 90 ? 0 : 90;
 
                     component.setData('rotation', newRotation);
 
@@ -754,8 +776,25 @@ export default class WorkspaceScene extends Phaser.Scene {
                         }
                     });
                 }
+                return;
             }
-            else if (this.keyD.isDown) {
+
+            // delete on D while clicking a placed component
+            if (this.keyD.isDown && !component.getData('isInPanel')) {
+                const lc = component.getData('logicComponent');
+                if (lc) {
+                    if (this.graph.removeComponent) this.graph.removeComponent(lc);
+                    if (lc.start && this.graph.removeNode) this.graph.removeNode(lc.start);
+                    if (lc.end && this.graph.removeNode) this.graph.removeNode(lc.end);
+                }
+
+                const idx = this.placedComponents.indexOf(component);
+                if (idx !== -1) this.placedComponents.splice(idx, 1);
+
+                if (this.selectedComponent === component) {
+                    this.selectedComponent = null;
+                }
+
                 component.destroy();
             }
         });
@@ -773,15 +812,14 @@ export default class WorkspaceScene extends Phaser.Scene {
     checkCircuit() {
         const currentChallenge = this.challenges[this.currentChallengeIndex];
         const placedTypes = this.placedComponents.map(comp => comp.getData('type'));
-        console.log("components", placedTypes);
+        console.log('components', placedTypes);
         this.checkText.setStyle({ color: '#cc0000' });
-        // preverjas ce so vse komponente na mizi
+
         if (!currentChallenge.requiredComponents.every(req => placedTypes.includes(req))) {
             this.checkText.setText('Manjkajo komponente za krog.');
             return;
         }
 
-        // je pravilna simulacija
         if (this.sim === undefined) {
             this.checkText.setText('Zaženi simlacijo');
             return;
@@ -792,16 +830,14 @@ export default class WorkspaceScene extends Phaser.Scene {
             return;
         }
 
-        // je zaprt krog
-
         this.checkText.setStyle({ color: '#00aa00' });
         this.checkText.setText('Čestitke! Krog je pravilen.');
         this.addPoints(10);
 
-        if (currentChallenge.theory) {
-            this.showTheory(currentChallenge.theory);
-        }
-        else {
+        const currentTheory = currentChallenge.theory;
+        if (currentTheory) {
+            this.showTheory(currentTheory);
+        } else {
             this.checkText.setStyle({ color: '#00aa00' });
             this.checkText.setText('Čestitke! Krog je pravilen.');
             this.addPoints(10);
@@ -883,5 +919,4 @@ export default class WorkspaceScene extends Phaser.Scene {
             this.continueButton = null;
         }
     }
-
 }
