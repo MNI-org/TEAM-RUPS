@@ -87,7 +87,11 @@ class CircuitGraph {
         return a && b && a.x === b.x && a.y === b.y;
     }
 
-    hasClosedLoop(current, target, visitedComps = new Set()) {
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async hasClosedLoop(current, target, visitedComps = new Set()) {
         if (!current || !target) return false;
 
         if (this.sameNode(current, target) && visitedComps.size > 0) {
@@ -97,12 +101,61 @@ class CircuitGraph {
         for (const comp of this.getConnections(current)) {
             if (!this.componentConducts(comp) || visitedComps.has(comp)) continue;
 
+
+
+            switch (comp.type) {
+                case "battery":
+                    comp.image.setTexture("baterija_on");
+                    break;
+                case "wire":
+                    comp.image.setTexture("žica_on");
+                    break;
+                case "bulb":
+                    comp.image.setTexture("svetilka_on");
+                    break;
+
+                case "resistor":
+                    comp.image.setTexture("upor_on");
+                    break;
+                case "switch":
+                    if (comp.is_on)
+                        comp.image.setTexture("stikalo-on_on");
+                    else
+                        comp.image.setTexture("stikalo-off_on");
+                    break;
+            }
+
+            await this.sleep(500)
+
+            switch (comp.type) {
+                case "battery":
+                    comp.image.setTexture("baterija");
+                    break;
+                case "wire":
+                    comp.image.setTexture("žica");
+                    break;
+                case "bulb":
+                    comp.image.setTexture("svetilka");
+                    break;
+                case "resistor":
+                    comp.image.setTexture("upor");
+                    break;
+                case "switch":
+                    if (comp.is_on)
+                        comp.image.setTexture("stikalo-on");
+                    else
+                        comp.image.setTexture("stikalo-off");
+                    break;
+            }
+
+            console.log("in check", comp)
+
             visitedComps.add(comp);
-            
+
             let next = this.sameNode(comp.start, current) ? comp.end : comp.start;
             if (!next) continue;
 
-            if(next === target && visitedComps.size < 2) continue;
+            if (next === target && visitedComps.size < 2) continue;
 
             if (next.type === 'switch' && !next.is_on) continue;
 
@@ -112,7 +165,7 @@ class CircuitGraph {
 
             visitedComps.delete(comp);
         }
-        
+
         console.log("Breaks at " + current.id);
         return false;
     }
@@ -125,7 +178,7 @@ class CircuitGraph {
             return -1;
         }
 
-        const switches = this.components.filter(c => c.type === 'switche');
+        const switches = this.components.filter(c => c.type === 'switch');
         switches.forEach(s => {
             if (!s.is_on) {
                 console.log("Switch " + s.id + " is OFF");

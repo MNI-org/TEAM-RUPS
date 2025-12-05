@@ -28,6 +28,14 @@ export default class WorkspaceScene extends Phaser.Scene {
     this.load.image('žica', 'src/components/wire.png');
     this.load.image('ampermeter', 'src/components/ammeter.png');
     this.load.image('voltmeter', 'src/components/voltmeter.png');
+      this.load.image('baterija_on', 'src/components/on_battery.png');
+      this.load.image('upor_on', 'src/components/on_resistor.png');
+      this.load.image('svetilka_on', 'src/components/on_lamp.png');
+      this.load.image('stikalo-on_on', 'src/components/on_switch-on.png');
+      this.load.image('stikalo-off_on', 'src/components/on_switch-off.png');
+      this.load.image('žica_on', 'src/components/on_wire.png');
+      this.load.image('ampermeter_on', 'src/components/on_ammeter.png');
+      this.load.image('voltmeter_on', 'src/components/on_voltmeter.png');
   }
 
   create() {
@@ -35,6 +43,7 @@ export default class WorkspaceScene extends Phaser.Scene {
 
     //d key za delete
     this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+    this.keyShift=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
 
     // površje mize
     const desk = this.add.rectangle(0, 0, width, height, 0xe0c9a6).setOrigin(0);
@@ -160,6 +169,7 @@ export default class WorkspaceScene extends Phaser.Scene {
         })
         .on('pointerdown', onClick);
 
+
       return { bg, text };
     };
 
@@ -185,6 +195,23 @@ export default class WorkspaceScene extends Phaser.Scene {
       }
       this.sim = false;
     });
+    this.runSimulacija=false
+    const simulBtn = makeButton(width - 140, 225, 'Začni simulacijo', () => {
+
+      this.runSimulacija = !this.runSimulacija;
+          if (this.runSimulacija) {
+            simulBtn.text.setText("Ustavi simulacijo");
+          } else {
+            simulBtn.text.setText("Začni simulacijo");
+          }
+
+    }
+    );
+    setInterval(() => {
+          if (this.runSimulacija)
+            this.connected = this.graph.simulate();
+        }, 2000
+    );
 
     // stranska vrstica na levi
     const panelWidth = 150;
@@ -338,7 +365,7 @@ export default class WorkspaceScene extends Phaser.Scene {
 
     // get container angle in radians (Phaser keeps both .angle and .rotation)
     const theta = (typeof component.rotation === 'number' && component.rotation) ? component.rotation : Phaser.Math.DegToRad(component.angle || 0);
-    console.log("rotation:",theta,component.rotation,component.angle,comp);
+    console.log("Component:",comp);
 
     const cos = Math.cos(theta);
     const sin = Math.sin(theta);
@@ -399,7 +426,12 @@ export default class WorkspaceScene extends Phaser.Scene {
           .setOrigin(0.5)
           .setDisplaySize(100, 100);
         component.add(componentImage);
-        component.setData('logicComponent', comp);
+
+          comp.container = component;       // reference to Phaser container
+          comp.image = componentImage;      // reference to Phaser image
+
+
+          component.setData('logicComponent', comp);
         break;
 
       case 'upor':
@@ -417,7 +449,11 @@ export default class WorkspaceScene extends Phaser.Scene {
           .setOrigin(0.5)
           .setDisplaySize(100, 100);
         component.add(componentImage);
-        component.setData('logicComponent', comp)
+
+          comp.container = component;       // reference to Phaser container
+          comp.image = componentImage;      // reference to Phaser image
+
+          component.setData('logicComponent', comp)
         break;
 
       case 'svetilka':
@@ -434,7 +470,11 @@ export default class WorkspaceScene extends Phaser.Scene {
           .setOrigin(0.5)
           .setDisplaySize(100, 100);
         component.add(componentImage);
-        component.setData('logicComponent', comp);
+
+          comp.container = component;       // reference to Phaser container
+          comp.image = componentImage;      // reference to Phaser image
+
+          component.setData('logicComponent', comp);
         break;
 
       case 'stikalo-on':
@@ -452,7 +492,11 @@ export default class WorkspaceScene extends Phaser.Scene {
           .setOrigin(0.5)
           .setDisplaySize(100, 100);
         component.add(componentImage);
-        component.setData('logicComponent', comp)
+
+          comp.container = component;       // reference to Phaser container
+          comp.image = componentImage;      // reference to Phaser image
+
+          component.setData('logicComponent', comp)
         break;
 
       case 'stikalo-off':
@@ -470,7 +514,12 @@ export default class WorkspaceScene extends Phaser.Scene {
           .setOrigin(0.5)
           .setDisplaySize(100, 100);
         component.add(componentImage);
-        component.setData('logicComponent', comp)
+
+          comp.container = component;       // reference to Phaser container
+          comp.image = componentImage;      // reference to Phaser image
+
+
+          component.setData('logicComponent', comp)
         break;
 
       case 'žica':
@@ -487,7 +536,11 @@ export default class WorkspaceScene extends Phaser.Scene {
           .setOrigin(0.5)
           .setDisplaySize(100, 100);
         component.add(componentImage);
-        component.setData('logicComponent', comp);
+
+          comp.container = component;       // reference to Phaser container
+          comp.image = componentImage;      // reference to Phaser image
+
+          component.setData('logicComponent', comp);
         break;
       case 'ampermeter':
         id = "ammeter_" + this.getRandomInt(1000, 9999);
@@ -553,10 +606,11 @@ export default class WorkspaceScene extends Phaser.Scene {
     this.input.setDraggable(component);
 
     component.on('dragstart', () => {
-      component.setData('isDragging', true);
+        component.setData('isDragging', true);
     });
 
     component.on('drag', (pointer, dragX, dragY) => {
+      if(this.runSimulacija) return
       component.x = dragX;
       component.y = dragY;
     });
@@ -620,25 +674,41 @@ export default class WorkspaceScene extends Phaser.Scene {
     });
 
     component.on('pointerdown', (pointer) => {
-      if (pointer.rightButtonDown()) {
+      if (this.runSimulacija){
+        // za karkoli je interactive med simulacijo
+        // console.log("comp",component.data.list.logicComponent.is_on);
+        switch (component.data.list.logicComponent.type){
+          case "switch":
+            component.data.list.logicComponent.is_on =!component.data.list.logicComponent.is_on
+            const newTexture = component.data.list.logicComponent.is_on ? 'stikalo-on' : 'stikalo-off';
+            component.data.list.logicComponent.image.setTexture(newTexture);
+            break;
+        }
+      }
+      else if (pointer.rightButtonDown()) {
         if (!component.getData('isInPanel')) {
+
           const currentRotation = component.getData('rotation');
-          let newRotation=90
-          if(currentRotation===90)
-            newRotation=0
-          console.log(newRotation)
+          let newRotation = currentRotation === 90 ? 0 : 90;
+
           component.setData('rotation', newRotation);
-          component.setData('isRotated', !component.getData('isRotated'));
+
+          const logicComp = component.getData('logicComponent');
+          if (logicComp) logicComp.rotation = newRotation;
 
           this.tweens.add({
             targets: component,
             angle: newRotation,
             duration: 150,
             ease: 'Cubic.easeOut',
+            onComplete: () => {
+              this.updateLogicNodePositions(component);
+            }
           });
         }
-      }else if(this.keyD.isDown){
-        component.destroy()
+      }
+      else if(this.keyD.isDown) {
+        component.destroy();
       }
     });
 
