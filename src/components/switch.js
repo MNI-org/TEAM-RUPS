@@ -3,9 +3,9 @@ import { Component } from "./component";
 class Switch extends Component{
     constructor(id, start, end, is_on=false) {
         if (is_on)
-            super(id, 'switch', start, end, 'src/components/switch-on.png', true);
+            super(id, 'switch', start, end, 'src/components/switch-on.png','src/components/on_switch-on.png', true);
         else
-            super(id, 'switch', start, end, 'src/components/switch-off.png', true);
+            super(id, 'switch', start, end, 'src/components/switch-off.png','src/components/on_switch-off.png', true);
         this.is_on = is_on
     }
 }

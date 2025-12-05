@@ -3,7 +3,7 @@ import { Component } from './component.js';
 
 class Wire extends Component{
     constructor(id, start, end, path = []) {
-        super(id, 'wire', start, end, 'src/components/wire.png', true);
+        super(id, 'wire', start, end, 'src/components/wire.png','src/components/on_wire.png', true);
         this.is_connected = false;
         this.debug_color = 0x0000ff;
     }
