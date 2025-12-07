@@ -190,22 +190,24 @@ export default class ScoreboardScene extends Phaser.Scene {
         });
 
         // BACK BUTTON
-        if (this.cameFromMenu === false) {
-            const backButton = this.add.text(width / 2, panelY + panelHeight - 40, '↩ Nazaj', {
-                fontFamily: 'Arial',
-                fontSize: '22px',
-                color: '#0066ff',
-                padding: { x: 20, y: 10 }
-            })
-                .setOrigin(0.5)
-                .setInteractive({ useHandCursor: true })
-                .on('pointerover', () => backButton.setStyle({ color: '#0044cc' }))
-                .on('pointerout', () => backButton.setStyle({ color: '#0066ff' }))
-                .on('pointerdown', () => {
+        const backButton = this.add.text(width / 2, panelY + panelHeight - 40, '↩ Nazaj', {
+            fontFamily: 'Arial',
+            fontSize: '22px',
+            color: '#0066ff',
+            padding: { x: 20, y: 10 }
+        })
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true })
+            .on('pointerover', () => backButton.setStyle({ color: '#0044cc' }))
+            .on('pointerout', () => backButton.setStyle({ color: '#0066ff' }))
+            .on('pointerdown', () => {
+                if (this.cameFromMenu) {
+                    this.scene.start('MenuScene');
+                } else {
                     this.scene.start('WorkspaceScene');
-                });
+                }
+            });
 
-            root.add(backButton);
-        }
+        root.add(backButton);
     }
 }
