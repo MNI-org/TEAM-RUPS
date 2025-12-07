@@ -94,46 +94,55 @@ export default class WorkspaceScene extends Phaser.Scene {
         this.challenges = [
             {
                 prompt: 'Sestavi preprosti električni krog z baterijo in svetilko.',
-                requiredComponents: ['baterija', 'svetilka', 'žica', 'žica', 'žica', 'žica', 'žica', 'žica'],
+                requiredComponents: ['baterija', 'svetilka'],
                 theory: ['Osnovni električni krog potrebuje vir, to je v našem primeru baterija. Potrebuje tudi porabnike, to je svetilka. Električni krog je v našem primeru sklenjen, kar je nujno potrebno, da električni tok teče preko prevodnikov oziroma žic.']
             },
             {
                 prompt: 'Sestavi preprosti nesklenjeni električni krog z baterijo, svetilko in stikalom.',
-                requiredComponents: ['baterija', 'svetilka', 'žica', 'stikalo-off'],
+                requiredComponents: ['baterija', 'svetilka', 'stikalo-off'],
                 theory: ['V nesklenjenem krogu je stikalo odprto, kar pomeni, da je električni tok prekinjen. Svetilka posledično zato ne sveti.']
             },
             {
                 prompt: 'Sestavi preprosti sklenjeni električni krog z baterijo, svetilko in stikalom.',
-                requiredComponents: ['baterija', 'svetilka', 'žica', 'stikalo-on'],
+                requiredComponents: ['baterija', 'svetilka', 'stikalo-on'],
                 theory: ['V sklenjenem krogu je stikalo zaprto, kar pomeni, da lahko električni tok teče neovirano. Torej v tem primeru so vrata zaprta.']
             },
             {
-                prompt: 'Sestavi električni krog z baterijo, svetilko in stikalom, ki ga lahko ugašaš in prižigaš.',
-                requiredComponents: ['baterija', 'svetilka', 'žica', 'stikalo-on', 'stikalo-off'],
+                prompt: 'Sestavi električni krog z baterijo, svetilko in stikalom, ki ga lahko prižigeš.',
+                requiredComponents: ['baterija', 'svetilka', 'stikalo-off'],
                 theory: ['Stikalo nam omogoča nadzor nad pretokom električnega toka. Ko je stikalo zaprto, tok teče in posledično svetilka sveti. Kadar pa je stikalo odprto, tok ne teče in se svetilka ugasne. To lahko primerjamo z vklapljanjem in izklapljanjem električnih naprav v naših domovih.']
             },
             {
                 prompt: 'Sestavi krog z dvema baterijama in svetilko. ',
-                requiredComponents: ['baterija', 'baterija', 'svetilka', 'žica'],
+                requiredComponents: ['baterija', 'baterija', 'svetilka'],
                 theory: ['Kadar vežemo dve ali več baterij zaporedno, se napetosti seštevajo. Večja je napetost, večji je električni tok. V našem primeru zato svetilka sveti močneje.']
             },
             {
                 prompt: 'V električni krog zaporedno poveži dve svetilki, ki ju priključiš na baterijo. ',
-                requiredComponents: ['baterija', 'svetilka', 'svetilka', 'žica'],
+                requiredComponents: ['baterija', 'svetilka', 'svetilka'],
                 theory: ['V zaporedni vezavi teče isti električni tok skozi vse svetilke. Napetost baterije se porazdeli. Če imamo primer, da ena svetilka preneha delovati, bo ta prekinila tok skozi drugo svetilko.']
             },
 
             {
                 prompt: 'V električni krog vzporedno poveži dve svetilki, ki ju priključiš na baterijo. ',
-                requiredComponents: ['baterija', 'svetilka', 'svetilka', 'žica'],
+                requiredComponents: ['baterija', 'svetilka', 'svetilka'],
                 theory: ['V vzporedni vezavi ima vsaka svetilka enako napetost kot baterija. Eletrični tok se porazdeli med svetilkami. Če ena svetilka preneha delovati, bo druga še vedno delovala.']
             },
             {
                 prompt: 'Sestavi električni krog s svetilko in uporom. ',
-                requiredComponents: ['baterija', 'svetilka', 'žica', 'upor'],
+                requiredComponents: ['baterija', 'svetilka', 'upor'],
                 theory: ['Upor omejuje tok v krogu. Večji kot je upor, manjši je tok. Spoznajmo Ohmov zakon: tok (I) = napetost (U) / upornost (R). Svetilka bo svetila manj intenzivno, saj skozi njo teče manjši tok.']
             },
-
+            {
+                prompt: 'V električni krog dodaj ampermeter, ki meri tok skozi svetilko.',
+                requiredComponents: ['baterija', 'svetilka','ampermeter'],
+                theory: ['Ampermeter meri električni tok in ga moramo vedno vezati zaporedno v krog. Tok, ki teče skozi svetilko, teče tudi skozi ampermeter. Če je krog sklenjen, instrument pokaže vrednost toka.']
+            },
+            {
+                prompt: 'V električni krog dodaj voltmeter, ki meri napetost na svetilki.',
+                requiredComponents: ['baterija', 'svetilka', 'voltmeter'],
+                theory: ['Voltmeter meri električno napetost in ga vedno vežemo vzporedno na element, ki ga merimo. V tem primeru merimo napetost na priključenih sponkah svetilke. Voltmeter ima visoko upornost, zato ne vpliva na tok v vezju.']
+            }
         ];
 
         // this.currentChallengeIndex = 0;
