@@ -41,9 +41,19 @@ export default class WorkspaceScene extends Phaser.Scene {
     create() {
         const { width, height } = this.cameras.main;
 
-        //d key za delete
         this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-        this.keyShift=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+        this.keyShift = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+
+        this.keyF1 = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F1);
+
+        this.debugEnabled = false;
+
+        this.debugData = {
+            selectedType: 'none',
+            selectedId: 'none',
+        };
+
+        this.createDebugOverlay(width, height);
 
         // površje mize
         const desk = this.add.rectangle(0, 0, width, height, 0xe0c9a6).setOrigin(0);
@@ -195,7 +205,7 @@ export default class WorkspaceScene extends Phaser.Scene {
             }
             this.sim = false;
         });
-        this.runSimulacija=false
+        this.runSimulacija = false
         const simulBtn = makeButton(width - 140, 225, 'Začni simulacijo', () => {
 
                 this.runSimulacija = !this.runSimulacija;
@@ -365,7 +375,7 @@ export default class WorkspaceScene extends Phaser.Scene {
 
         // get container angle in radians (Phaser keeps both .angle and .rotation)
         const theta = (typeof component.rotation === 'number' && component.rotation) ? component.rotation : Phaser.Math.DegToRad(component.angle || 0);
-        console.log("Component:",comp);
+        console.log("Component:", comp);
 
         const cos = Math.cos(theta);
         const sin = Math.sin(theta);
@@ -562,11 +572,11 @@ export default class WorkspaceScene extends Phaser.Scene {
 
         component.on('pointerover', () => {
             if (component.getData('isInPanel')) {
-                // prikaži info okno
+                // prikaži info okno za komponento v levem panelu
                 const details = this.getComponentDetails(type);
                 this.infoText.setText(details);
 
-                // zraven komponente
+                // okno postavimo zraven ikone v panelu
                 this.infoWindow.x = x + 120;
                 this.infoWindow.y = y;
                 this.infoWindow.setVisible(true);
@@ -576,6 +586,7 @@ export default class WorkspaceScene extends Phaser.Scene {
 
         component.on('pointerout', () => {
             if (component.getData('isInPanel')) {
+                // skrij info okno, ko gre miš iz ikone v panelu
                 this.infoWindow.setVisible(false);
             }
             component.setScale(1);
@@ -610,7 +621,7 @@ export default class WorkspaceScene extends Phaser.Scene {
         });
 
         component.on('drag', (pointer, dragX, dragY) => {
-            if(this.runSimulacija) return
+            if (this.runSimulacija) return
             component.x = dragX;
             component.y = dragY;
         });
@@ -641,6 +652,8 @@ export default class WorkspaceScene extends Phaser.Scene {
 
                 component.setData('isRotated', false);
                 component.setData('isInPanel', false);
+
+                this.infoWindow.setVisible(false);
 
                 this.createComponent(
                     component.getData('originalX'),
@@ -674,12 +687,17 @@ export default class WorkspaceScene extends Phaser.Scene {
         });
 
         component.on('pointerdown', (pointer) => {
-            if (this.runSimulacija){
+            this.selectedComponent = component;
+
+            const logicComp = component.getData('logicComponent');
+            this.debugData.selectedType = component.getData('type') || type || 'none';
+            this.debugData.selectedId = logicComp ? (logicComp.id ?? 'no-id') : 'no-logic';
+
+            if (this.runSimulacija) {
                 // za karkoli je interactive med simulacijo
-                // console.log("comp",component.data.list.logicComponent.is_on);
-                switch (component.data.list.logicComponent.type){
+                switch (component.data.list.logicComponent.type) {
                     case "switch":
-                        component.data.list.logicComponent.is_on =!component.data.list.logicComponent.is_on
+                        component.data.list.logicComponent.is_on = !component.data.list.logicComponent.is_on
                         const newTexture = component.data.list.logicComponent.is_on ? 'stikalo-on' : 'stikalo-off';
                         component.data.list.logicComponent.image.setTexture(newTexture);
                         break;
@@ -693,8 +711,8 @@ export default class WorkspaceScene extends Phaser.Scene {
 
                     component.setData('rotation', newRotation);
 
-                    const logicComp = component.getData('logicComponent');
-                    if (logicComp) logicComp.rotation = newRotation;
+                    const logicComp2 = component.getData('logicComponent');
+                    if (logicComp2) logicComp2.rotation = newRotation;
 
                     this.tweens.add({
                         targets: component,
@@ -707,7 +725,7 @@ export default class WorkspaceScene extends Phaser.Scene {
                     });
                 }
             }
-            else if(this.keyD.isDown) {
+            else if (this.keyD.isDown) {
                 component.destroy();
             }
         });
@@ -848,6 +866,75 @@ export default class WorkspaceScene extends Phaser.Scene {
         if (this.continueButton) {
             this.continueButton.destroy();
             this.continueButton = null;
+        }
+    }
+
+    createDebugOverlay(width, height) {
+        if (!this.debugEnabled) return;
+
+        const panelWidth = 220;
+        const panelHeight = 80;
+
+        // temno ozadje za lažje branje podatkov
+        this.debugBg = this.add.rectangle(
+            width - panelWidth / 2 - 20,
+            panelHeight / 2 + 20,
+            panelWidth,
+            panelHeight,
+            0x000000,
+            0.7
+        )
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(2000);
+
+        // besedilo z informacijami o izbrani komponenti
+        this.debugText = this.add.text(
+            width - panelWidth + 10,
+            20,
+            '',
+            {
+                fontSize: '12px',
+                color: '#00ff00',
+                fontFamily: 'monospace',
+                align: 'left',
+                wordWrap: { width: panelWidth - 20 }
+            }
+        )
+            .setDepth(2001)
+            .setScrollFactor(0);
+
+        this.updateDebugText();
+    }
+
+    // osveži besedilo v debug oknu
+    updateDebugText() {
+        if (!this.debugEnabled || !this.debugText) return;
+
+        const text =
+            'DEBUG WORKSPACE\n' +
+            '----------------\n' +
+            `Izbran tip: ${this.debugData.selectedType}\n` +
+            `Izbran id:  ${this.debugData.selectedId}\n`;
+
+        this.debugText.setText(text);
+    }
+
+    update(time, delta) {
+        if (this.keyF1 && Phaser.Input.Keyboard.JustDown(this.keyF1)) {
+            this.debugEnabled = !this.debugEnabled;
+
+            if (this.debugEnabled && !this.debugBg && !this.debugText) {
+                const { width, height } = this.cameras.main;
+                this.createDebugOverlay(width, height);
+            }
+
+            if (this.debugBg) this.debugBg.setVisible(this.debugEnabled);
+            if (this.debugText) this.debugText.setVisible(this.debugEnabled);
+        }
+
+        if (this.debugEnabled) {
+            this.updateDebugText();
         }
     }
 
