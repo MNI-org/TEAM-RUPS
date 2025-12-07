@@ -43,7 +43,18 @@ export default class WorkspaceScene extends Phaser.Scene {
 
         //d key za delete
         this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-        this.keyShift=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+        this.keyShift = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+        this.keyDelete = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DELETE);
+
+        // currently selected component on the desk
+        this.selectedComponent = null;
+
+        // Delete selected component with Delete key
+        this.input.keyboard.on('keydown-DELETE', () => {
+            if (!this.selectedComponent) return;
+            if (this.selectedComponent.getData('isInPanel')) return;
+            this.deletePlacedComponent(this.selectedComponent);
+        });
 
         // površje mize
         const desk = this.add.rectangle(0, 0, width, height, 0xe0c9a6).setOrigin(0);
@@ -195,7 +206,7 @@ export default class WorkspaceScene extends Phaser.Scene {
             }
             this.sim = false;
         });
-        this.runSimulacija=false
+        this.runSimulacija = false
         const simulBtn = makeButton(width - 140, 225, 'Začni simulacijo', () => {
 
                 this.runSimulacija = !this.runSimulacija;
@@ -365,7 +376,7 @@ export default class WorkspaceScene extends Phaser.Scene {
 
         // get container angle in radians (Phaser keeps both .angle and .rotation)
         const theta = (typeof component.rotation === 'number' && component.rotation) ? component.rotation : Phaser.Math.DegToRad(component.angle || 0);
-        console.log("Component:",comp);
+        console.log("Component:", comp);
 
         const cos = Math.cos(theta);
         const sin = Math.sin(theta);
@@ -401,6 +412,44 @@ export default class WorkspaceScene extends Phaser.Scene {
         const endDot = component.getData('endDot');
         if (startDot && comp.start) { startDot.x = comp.start.x; startDot.y = comp.start.y; }
         if (endDot && comp.end) { endDot.x = comp.end.x; endDot.y = comp.end.y; }
+    }
+
+    deletePlacedComponent(component) {
+        if (!component || !component.getData) return;
+
+        // do not delete items in the left panel
+        if (component.getData('isInPanel')) return;
+
+        const comp = component.getData('logicComponent');
+
+        // remove from graph if logic component exists
+        if (comp && this.graph) {
+            if (typeof this.graph.removeComponent === 'function') {
+                this.graph.removeComponent(comp);
+            } else if (Array.isArray(this.graph.components)) {
+                this.graph.components = this.graph.components.filter(c => c !== comp);
+            }
+
+            // remove nodes if graph supports it
+            if (this.graph.removeNode) {
+                if (comp.start) this.graph.removeNode(comp.start);
+                if (comp.end) this.graph.removeNode(comp.end);
+            }
+        }
+
+        // remove visual component from placedComponents list
+        if (Array.isArray(this.placedComponents)) {
+            const idx = this.placedComponents.indexOf(component);
+            if (idx !== -1) this.placedComponents.splice(idx, 1);
+        }
+
+        // clear selection if this was selected
+        if (this.selectedComponent === component) {
+            this.selectedComponent = null;
+        }
+
+        // finally destroy the Phaser object
+        component.destroy();
     }
 
     createComponent(x, y, type, color) {
@@ -610,7 +659,7 @@ export default class WorkspaceScene extends Phaser.Scene {
         });
 
         component.on('drag', (pointer, dragX, dragY) => {
-            if(this.runSimulacija) return
+            if (this.runSimulacija) return
             component.x = dragX;
             component.y = dragY;
         });
@@ -674,20 +723,17 @@ export default class WorkspaceScene extends Phaser.Scene {
         });
 
         component.on('pointerdown', (pointer) => {
-            if (this.runSimulacija){
+            if (this.runSimulacija) {
                 // za karkoli je interactive med simulacijo
-                // console.log("comp",component.data.list.logicComponent.is_on);
-                switch (component.data.list.logicComponent.type){
-                    case "switch":
-                        component.data.list.logicComponent.is_on =!component.data.list.logicComponent.is_on
+                switch (component.data.list.logicComponent?.type) {
+                    case 'switch':
+                        component.data.list.logicComponent.is_on = !component.data.list.logicComponent.is_on;
                         const newTexture = component.data.list.logicComponent.is_on ? 'stikalo-on' : 'stikalo-off';
                         component.data.list.logicComponent.image.setTexture(newTexture);
                         break;
                 }
-            }
-            else if (pointer.rightButtonDown()) {
+            } else if (pointer.rightButtonDown()) {
                 if (!component.getData('isInPanel')) {
-
                     const currentRotation = component.getData('rotation');
                     let newRotation = currentRotation === 90 ? 0 : 90;
 
@@ -706,9 +752,17 @@ export default class WorkspaceScene extends Phaser.Scene {
                         }
                     });
                 }
-            }
-            else if(this.keyD.isDown) {
-                component.destroy();
+            } else {
+                // left click behaviour (no simulation, no right-click): select and/or delete with D key
+                if (!component.getData('isInPanel')) {
+                    // select the component on desk
+                    this.selectedComponent = component;
+                }
+
+                // if D key is held, delete this placed component immediately
+                if (this.keyD && this.keyD.isDown && !component.getData('isInPanel')) {
+                    this.deletePlacedComponent(component);
+                }
             }
         });
 
