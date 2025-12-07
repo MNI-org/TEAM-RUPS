@@ -153,11 +153,11 @@ export default class WorkspaceScene extends Phaser.Scene {
             padding: { x: 15, y: 8 }
         }).setOrigin(0.5);
 
-        const buttonWidth = 180;
+        const buttonWidth = 200;
         const buttonHeight = 45;
         const cornerRadius = 10;
 
-        const makeButton = (x, y, label, onClick) => {
+                const makeButton = (x, y, label, onClick, hint) => {
             const bg = this.add.graphics();
             bg.fillStyle(0x3399ff, 1);
             bg.fillRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
@@ -172,11 +172,18 @@ export default class WorkspaceScene extends Phaser.Scene {
                     bg.clear();
                     bg.fillStyle(0x0f5cad, 1);
                     bg.fillRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
+
+                    this.infoText.setText(hint);
+                    this.infoWindow.setVisible(true);   // ← FIX: show the whole window
+                    this.infoWindow.x = x - 120;        // optional: move near button
+                    this.infoWindow.y = y;
                 })
                 .on('pointerout', () => {
                     bg.clear();
                     bg.fillStyle(0x3399ff, 1);
                     bg.fillRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
+
+                    this.infoWindow.setVisible(false);  // hide it again
                 })
                 .on('pointerdown', onClick);
 
@@ -184,9 +191,8 @@ export default class WorkspaceScene extends Phaser.Scene {
             return { bg, text };
         };
 
-        makeButton(width - 140, 75, 'Lestvica', () => this.scene.start('ScoreboardScene', { cameFromMenu: false }));
-        makeButton(width - 140, 125, 'Preveri krog', () => this.checkCircuit());
-        makeButton(width - 140, 175, 'Simulacija', () => {
+        makeButton(width - 140, 75, 'Lestvica', () => this.scene.start('ScoreboardScene', { cameFromMenu: false }), "Poglej kako se odrežeš proti ostalim igralcem!");
+        makeButton(width - 140, 125, 'Simulacija tokokroga', () => {
             this.connected = this.graph.simulate()
             if (this.connected == 1) {
                 this.checkText.setStyle({ color: '#00aa00' });
@@ -205,24 +211,12 @@ export default class WorkspaceScene extends Phaser.Scene {
                 this.checkText.setText('Električni tok ni sklenjen');
             }
             this.sim = false;
-        });
-        this.runSimulacija = false
-        const simulBtn = makeButton(width - 140, 225, 'Začni simulacijo', () => {
-
-                this.runSimulacija = !this.runSimulacija;
-                if (this.runSimulacija) {
-                    simulBtn.text.setText("Ustavi simulacijo");
-                } else {
-                    simulBtn.text.setText("Začni simulacijo");
-                }
-
-            }
-        );
-        setInterval(() => {
-                if (this.runSimulacija)
-                    this.connected = this.graph.simulate();
-            }, 2000
-        );
+        }, "Zaženi simulacijo in preveri ali je tvoj krog sklenjen!");
+        makeButton(width - 140, 175, 'Preveri rešitev', () => this.checkCircuit(), "Preveri ali si uspešno zaključil izziv!");
+        makeButton(width - 140, 225, 'Pojdi na začetek', () => {
+            localStorage.removeItem('currentChallengeIndex');
+            this.scene.start("WorkspaceScene")
+        }, "Vrni se na začetek izzivov.");
 
         // stranska vrstica na levi
         const panelWidth = 150;
@@ -734,6 +728,7 @@ export default class WorkspaceScene extends Phaser.Scene {
                 }
             } else if (pointer.rightButtonDown()) {
                 if (!component.getData('isInPanel')) {
+
                     const currentRotation = component.getData('rotation');
                     let newRotation = currentRotation === 90 ? 0 : 90;
 
@@ -803,6 +798,7 @@ export default class WorkspaceScene extends Phaser.Scene {
 
         this.checkText.setStyle({ color: '#00aa00' });
         this.checkText.setText('Čestitke! Krog je pravilen.');
+        this.addPoints(10);
         this.addPoints(10);
 
         if (currentChallenge.theory) {
