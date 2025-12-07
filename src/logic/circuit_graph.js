@@ -4,58 +4,30 @@ class CircuitGraph {
         this.components = [];
         this.MERGE_RADIUS = 25;
     }
-
-    // addNode(node) {
-    //     if (!node) return null;
-
-    //     if (!node.connected) node.connected = new Set();
-
-    //     for (const existingNode of this.nodes.values()) {
-    //         const dx = existingNode.x - node.x;
-    //         const dy = existingNode.y - node.y;
-    //         const distance = Math.hypot(dx, dy);
-
-    //         if (distance < this.MERGE_RADIUS) {
-    //             node.connected.forEach(c => {
-    //                 if(c != existingNode)
-    //                     existingNode.connected.add(c)
-    //             });
-    //             if(node != existingNode)
-    //                 existingNode.connected.add(node);
-    //             node.connected.add(existingNode);
-
-    //             return existingNode;
-    //         }
-    //     }
-
-    //     this.nodes.set(node.id, node);
-    //     return node;
-    // }
     addNode(node) {
-    if (!node) return null;
+        if (!node) return null;
 
-    if (!node.connected) node.connected = new Set();
+        if (!node.connected) node.connected = new Set();
 
-    for (const existingNode of this.nodes.values()) {
-        const dx = existingNode.x - node.x;
-        const dy = existingNode.y - node.y;
-        const distance = Math.hypot(dx, dy);
+        for (const existingNode of this.nodes.values()) {
+            const dx = existingNode.x - node.x;
+            const dy = existingNode.y - node.y;
+            const distance = Math.hypot(dx, dy);
 
-        if (distance < this.MERGE_RADIUS) {
-            // Merge the connections
-            // node.connected.forEach(c => existingNode.connected.add(c));
-            // Connect the nodes to each other
-            existingNode.connected.add(node);
-            node.connected.add(existingNode);
+            if (distance < this.MERGE_RADIUS) {
+                // Merge the connections
+                // node.connected.forEach(c => existingNode.connected.add(c));
+                // Connect the nodes to each other
+                existingNode.connected.add(node);
+                node.connected.add(existingNode);
 
-            return existingNode;
+                return existingNode;
+            }
         }
+
+        this.nodes.set(node.id, node);
+        return node;
     }
-
-    this.nodes.set(node.id, node);
-    return node;
-}
-
 
     addComponent(component) {
         if (!component || !component.start || !component.end) return;
