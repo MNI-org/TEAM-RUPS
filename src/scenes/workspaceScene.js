@@ -147,6 +147,16 @@ export default class WorkspaceScene extends Phaser.Scene {
 
         // this.currentChallengeIndex = 0;
 
+        this.input.on('dragstart', () => {
+            this.infoWindow.setVisible(false);
+            this.infoText.setText('');
+        });
+
+        this.input.on('dragend', () => {
+            this.infoWindow.setVisible(false);
+            this.infoText.setText('');
+        });
+
         this.promptText = this.add.text(width / 1.8, height - 30, this.challenges[this.currentChallengeIndex].prompt, {
             fontSize: '20px',
             color: '#333',
@@ -629,6 +639,7 @@ export default class WorkspaceScene extends Phaser.Scene {
         component.on('pointerout', () => {
             if (component.getData('isInPanel')) {
                 this.infoWindow.setVisible(false);
+                this.infoText.setText('');
             }
             component.setScale(1);
         });
