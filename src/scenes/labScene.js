@@ -138,7 +138,6 @@ export default class LabScene extends Phaser.Scene {
         fontStyle: 'bold'
     });
 
-
     const logoutButton = this.add.text(40, 30, '↩ Odjavi se', {
         fontFamily: 'Arial',
         fontSize: '20px',
