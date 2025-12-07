@@ -1,4 +1,3 @@
-// javascript
 import Phaser from 'phaser';
 import LabScene from './labScene';
 import { Battery } from '../components/battery';
@@ -12,7 +11,6 @@ import { Resistor } from '../components/resistor';
 export default class WorkspaceScene extends Phaser.Scene {
     constructor() {
         super('WorkspaceScene');
-        this.root = null; // container for resizeable layout
     }
 
     init() {
@@ -43,34 +41,27 @@ export default class WorkspaceScene extends Phaser.Scene {
     create() {
         const { width, height } = this.cameras.main;
 
-        // keys
+        //d key za delete
         this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-        this.keyShift = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
-        this.keyDelete = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DELETE);
+        this.keyShift=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
 
-        // selection
-        this.selectedComponent = null;
-
-        // delete on Delete key
-        this.input.keyboard.on('keydown-DELETE', () => {
-            if (!this.selectedComponent || this.selectedComponent.getData('isInPanel')) return;
-
-            const comp = this.selectedComponent.getData('logicComponent');
-            if (comp) {
-                if (this.graph.removeComponent) this.graph.removeComponent(comp);
-                if (comp.start && this.graph.removeNode) this.graph.removeNode(comp.start);
-                if (comp.end && this.graph.removeNode) this.graph.removeNode(comp.end);
-            }
-
-            const idx = this.placedComponents.indexOf(this.selectedComponent);
-            if (idx !== -1) this.placedComponents.splice(idx, 1);
-
-            this.selectedComponent.destroy();
-            this.selectedComponent = null;
-        });
-
-        // root container for everything that should resize
-        this.root = this.add.container(0, 0);
+        // površje mize
+        const desk = this.add.rectangle(0, 0, width, height, 0xe0c9a6).setOrigin(0);
+        const gridGraphics = this.add.graphics();
+        gridGraphics.lineStyle(1, 0x8b7355, 0.35);
+        const gridSize = 40;
+        for (let x = 0; x < width; x += gridSize) {
+            gridGraphics.beginPath();
+            gridGraphics.moveTo(x, 0);
+            gridGraphics.lineTo(x, height);
+            gridGraphics.strokePath();
+        }
+        for (let y = 0; y < height; y += gridSize) {
+            gridGraphics.beginPath();
+            gridGraphics.moveTo(0, y);
+            gridGraphics.lineTo(width, y);
+            gridGraphics.strokePath();
+        }
 
         this.infoWindow = this.add.container(0, 0);
         this.infoWindow.setDepth(1000);
@@ -134,117 +125,23 @@ export default class WorkspaceScene extends Phaser.Scene {
 
         ];
 
-        // shrani komponente na mizi
-        this.placedComponents = [];
-        this.gridSize = 40;
+        // this.currentChallengeIndex = 0;
 
-        this.runSimulacija = false;
-        this.sim = undefined;
+        this.promptText = this.add.text(width / 1.8, height - 30, this.challenges[this.currentChallengeIndex].prompt, {
+            fontSize: '20px',
+            color: '#333',
+            fontStyle: 'bold',
+            backgroundColor: '#ffffff88',
+            padding: { x: 15, y: 8 }
+        }).setOrigin(0.5);
 
-        // build initial layout
-        this.buildLayout(width, height);
+        this.checkText = this.add.text(width / 2, height - 70, '', {
+            fontSize: '18px',
+            color: '#cc0000',
+            fontStyle: 'bold',
+            padding: { x: 15, y: 8 }
+        }).setOrigin(0.5);
 
-        // interval za simulacijo
-        if (!this.intervalSet) {
-            setInterval(() => {
-                if (this.runSimulacija)
-                    this.connected = this.graph.simulate();
-            }, 2000);
-            this.intervalSet = true;
-        }
-
-        console.log(JSON.parse(localStorage.getItem('users')));
-
-        this.input.keyboard.on('keydown-ESC', () => {
-            this.cameras.main.fade(300, 0, 0, 0);
-            this.time.delayedCall(300, () => {
-                this.scene.start('LabScene');
-            });
-        });
-
-        // handle resize
-        this.scale.on('resize', (gameSize) => {
-            const w = gameSize.width;
-            const h = gameSize.height;
-            if (!w || !h) return;
-
-            if (this.root) {
-                this.root.removeAll(true); // destroy old layout objects
-            }
-
-            this.buildLayout(w, h);
-        });
-    }
-
-    buildLayout(width, height) {
-        const root = this.root;
-
-        // desk background
-        const desk = this.add.rectangle(0, 0, width, height, 0xe0c9a6).setOrigin(0);
-        root.add(desk);
-
-        // grid
-        const gridGraphics = this.add.graphics();
-        gridGraphics.lineStyle(1, 0x8b7355, 0.35);
-        const gridSize = 40;
-        for (let x = 0; x < width; x += gridSize) {
-            gridGraphics.beginPath();
-            gridGraphics.moveTo(x, 0);
-            gridGraphics.lineTo(x, height);
-            gridGraphics.strokePath();
-        }
-        for (let y = 0; y < height; y += gridSize) {
-            gridGraphics.beginPath();
-            gridGraphics.moveTo(0, y);
-            gridGraphics.lineTo(width, y);
-            gridGraphics.strokePath();
-        }
-        root.add(gridGraphics);
-
-        if (this.promptText) this.promptText.destroy();
-        if (this.checkText) this.checkText.destroy();
-
-        const maxPromptWidth = Math.min(width - 220, 600);
-
-        // checkText on top
-        this.checkText = this.add.text(
-            width / 2,
-            height - 90,
-            '',
-            {
-                fontFamily: 'Arial',
-                fontSize: width < 700 ? '16px' : '18px',
-                color: '#cc0000',
-                fontStyle: 'bold',
-                align: 'center',
-                wordWrap: { width: maxPromptWidth },
-                backgroundColor: '#ffffffcc',
-                padding: { x: 18, y: 8 }
-            }
-        )
-            .setOrigin(0.5);
-        root.add(this.checkText);
-
-        // promptText at bottom
-        this.promptText = this.add.text(
-            width / 2,
-            height - 40,
-            this.challenges[this.currentChallengeIndex].prompt,
-            {
-                fontFamily: 'Arial',
-                fontSize: width < 700 ? '16px' : '18px',
-                color: '#222222',
-                fontStyle: 'bold',
-                align: 'center',
-                wordWrap: { width: maxPromptWidth },
-                backgroundColor: '#ffffffcc',
-                padding: { x: 18, y: 10 }
-            }
-        )
-            .setOrigin(0.5);
-        root.add(this.promptText);
-
-        // buttons
         const buttonWidth = 180;
         const buttonHeight = 45;
         const cornerRadius = 10;
@@ -252,81 +149,82 @@ export default class WorkspaceScene extends Phaser.Scene {
         const makeButton = (x, y, label, onClick) => {
             const bg = this.add.graphics();
             bg.fillStyle(0x3399ff, 1);
-            bg.fillRoundedRect(
-                x - buttonWidth / 2,
-                y - buttonHeight / 2,
-                buttonWidth,
-                buttonHeight,
-                cornerRadius
-            );
-            root.add(bg);
+            bg.fillRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
 
             const text = this.add.text(x, y, label, {
                 fontFamily: 'Arial',
-                fontSize: '18px',
-                color: '#ffffff',
-                fontStyle: 'bold'
-            })
-                .setOrigin(0.5)
+                fontSize: '20px',
+                color: '#ffffff'
+            }).setOrigin(0.5)
                 .setInteractive({ useHandCursor: true })
-                .on('pointerover', () => text.setStyle({ color: '#e6f2ff' }))
-                .on('pointerout', () => text.setStyle({ color: '#ffffff' }))
+                .on('pointerover', () => {
+                    bg.clear();
+                    bg.fillStyle(0x0f5cad, 1);
+                    bg.fillRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
+                })
+                .on('pointerout', () => {
+                    bg.clear();
+                    bg.fillStyle(0x3399ff, 1);
+                    bg.fillRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
+                })
                 .on('pointerdown', onClick);
 
-            root.add(text);
+
             return { bg, text };
         };
 
-        makeButton(width - 140, 75, 'Lestvica', () =>
-            this.scene.start('ScoreboardScene', { cameFromMenu: false })
-        );
-
+        makeButton(width - 140, 75, 'Lestvica', () => this.scene.start('ScoreboardScene', { cameFromMenu: false }));
         makeButton(width - 140, 125, 'Preveri krog', () => this.checkCircuit());
-
         makeButton(width - 140, 175, 'Simulacija', () => {
-            this.connected = this.graph.simulate();
-            if (this.connected === 1) {
+            this.connected = this.graph.simulate()
+            if (this.connected == 1) {
                 this.checkText.setStyle({ color: '#00aa00' });
-                this.checkText.setText('Električni tok je sklenjen.');
-                this.checkText.setVisible(true);
+                this.checkText.setText('Električni tok je sklenjen');
                 this.sim = true;
                 return;
             }
             this.checkText.setStyle({ color: '#cc0000' });
-            if (this.connected === -1) {
-                this.checkText.setText('Manjka ti baterija.');
-            } else if (this.connected === -2) {
-                this.checkText.setText('Stikalo je izklopljeno.');
-            } else if (this.connected === 0) {
-                this.checkText.setText('Električni tok ni sklenjen.');
+            if (this.connected == -1) {
+                this.checkText.setText('Manjka ti baterija');
             }
-            this.checkText.setVisible(true);
+            else if (this.connected == -2) {
+                this.checkText.setText('Stikalo je izklopljeno');
+            }
+            else if (this.connected == 0) {
+                this.checkText.setText('Električni tok ni sklenjen');
+            }
             this.sim = false;
         });
-
+        this.runSimulacija=false
         const simulBtn = makeButton(width - 140, 225, 'Začni simulacijo', () => {
-            this.runSimulacija = !this.runSimulacija;
-            if (this.runSimulacija) {
-                simulBtn.text.setText('Ustavi simulacijo');
-            } else {
-                simulBtn.text.setText('Začni simulacijo');
+
+                this.runSimulacija = !this.runSimulacija;
+                if (this.runSimulacija) {
+                    simulBtn.text.setText("Ustavi simulacijo");
+                } else {
+                    simulBtn.text.setText("Začni simulacijo");
+                }
+
             }
-        });
+        );
+        setInterval(() => {
+                if (this.runSimulacija)
+                    this.connected = this.graph.simulate();
+            }, 2000
+        );
 
+        // stranska vrstica na levi
         const panelWidth = 150;
-        const side1 = this.add.rectangle(0, 0, panelWidth, height, 0xc0c0c0).setOrigin(0);
-        const side2 = this.add.rectangle(0, 0, panelWidth, height, 0x000000, 0.2).setOrigin(0);
-        root.add(side1);
-        root.add(side2);
+        this.add.rectangle(0, 0, panelWidth, height, 0xc0c0c0).setOrigin(0);
+        this.add.rectangle(0, 0, panelWidth, height, 0x000000, 0.2).setOrigin(0);
 
-        const sideTitle = this.add.text(panelWidth / 2, 60, 'Komponente', {
-            fontFamily: 'Arial',
+        this.add.text(panelWidth / 2, 60, 'Komponente', {
             fontSize: '18px',
             color: '#ffffff',
             fontStyle: 'bold'
         }).setOrigin(0.5);
-        root.add(sideTitle);
 
+        // komponente v stranski vrstici
         this.createComponent(panelWidth / 2, 100, 'baterija', 0xffcc00);
         this.createComponent(panelWidth / 2, 180, 'upor', 0xff6600);
         this.createComponent(panelWidth / 2, 260, 'svetilka', 0xff0000);
@@ -336,28 +234,11 @@ export default class WorkspaceScene extends Phaser.Scene {
         this.createComponent(panelWidth / 2, 580, 'ampermeter', 0x00cc66);
         this.createComponent(panelWidth / 2, 660, 'voltmeter', 0x00cc66);
 
-        const maxTopWidth = Math.min(width - 160, 700);
-        const topText = this.add.text(
-            width / 2 + 50,
-            30,
-            'Povleci komponente na mizo in zgradi svoj električni krog!',
-            {
-                fontSize: '20px',
-                color: '#333',
-                fontStyle: 'bold',
-                align: 'center',
-                backgroundColor: '#ffffff88',
-                padding: { x: 15, y: 8 }
-            }
-        ).setOrigin(0.5);
-        root.add(topText);
-
-        // back button
-        const backButton = this.add.text(16, 14, '↩ Nazaj', {
+        const backButton = this.add.text(12, 10, '↩ Nazaj', {
             fontFamily: 'Arial',
             fontSize: '20px',
             color: '#387affff',
-            padding: { x: 12, y: 6 }
+            padding: { x: 20, y: 10 }
         })
             .setOrigin(0, 0)
             .setInteractive({ useHandCursor: true })
@@ -365,9 +246,56 @@ export default class WorkspaceScene extends Phaser.Scene {
             .on('pointerout', () => backButton.setStyle({ color: '#387affff' }))
             .on('pointerdown', () => {
                 this.cameras.main.fade(300, 0, 0, 0);
-                this.time.delayedCall(300, () => this.scene.start('LabScene'));
+                this.time.delayedCall(300, () => {
+                    this.scene.start('LabScene');
+                });
             });
-        root.add(backButton);
+
+        this.add.text(width / 2 + 50, 30, 'Povleci komponente na mizo in zgradi svoj električni krog!', {
+            fontSize: '20px',
+            color: '#333',
+            fontStyle: 'bold',
+            align: 'center',
+            backgroundColor: '#ffffff88',
+            padding: { x: 15, y: 8 }
+        }).setOrigin(0.5);
+
+        // shrani komponente na mizi
+        this.placedComponents = [];
+        this.gridSize = 40;
+
+        // const scoreButton = this.add.text(this.scale.width / 1.1, 25, 'Lestvica', {
+        //   fontFamily: 'Arial',
+        //   fontSize: '18px',
+        //   color: '#0066ff',
+        //   backgroundColor: '#e1e9ff',
+        //   padding: { x: 20, y: 10 }
+        // })
+        //   .setOrigin(0.5)
+        //   .setInteractive({ useHandCursor: true })
+        //   .on('pointerover', () => scoreButton.setStyle({ color: '#0044cc' }))
+        //   .on('pointerout', () => scoreButton.setStyle({ color: '#0066ff' }))
+        //   .on('pointerdown', () => {
+        //     this.scene.start('ScoreboardScene');
+        //   });
+
+        // const simulate = this.add.text(this.scale.width / 1.1, 25, 'Simulacija', {
+        //   fontFamily: 'Arial',
+        //   fontSize: '18px',
+        //   color: '#0066ff',
+        //   backgroundColor: '#e1e9ff',
+        //   padding: { x: 20, y: 10 }
+        // })
+        //   .setOrigin(0.5, -1)
+        //   .setInteractive({ useHandCursor: true })
+        //   .on('pointerover', () => simulate.setStyle({ color: '#0044cc' }))
+        //   .on('pointerout', () => simulate.setStyle({ color: '#0066ff' }))
+        //   .on('pointerdown', () => {
+        //     console.log(this.graph);
+        //     this.graph.simulate();
+        //   });
+
+        console.log(JSON.parse(localStorage.getItem('users')));
     }
 
     getComponentDetails(type) {
@@ -413,6 +341,7 @@ export default class WorkspaceScene extends Phaser.Scene {
         const gridSize = this.gridSize;
         const startX = 200;
 
+        // komponeta se postavi na presečišče
         const snappedX = Math.round((x - startX) / gridSize) * gridSize + startX;
         const snappedY = Math.round(y / gridSize) * gridSize;
 
@@ -425,19 +354,18 @@ export default class WorkspaceScene extends Phaser.Scene {
         return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled);
     }
 
-    updateLogicNodePositions(component) {
+    updateLogicNodePositions(component) { //to je po move
         const comp = component.getData('logicComponent');
         if (!comp) return;
-
+        // derive local offsets: prefer comp-local offsets, else use half display
         const halfW = 40;
         const halfH = 40;
         const localStart = comp.localStart || { x: -halfW, y: 0 };
         const localEnd = comp.localEnd || { x: halfW, y: 0 };
 
-        const theta = (typeof component.rotation === 'number' && component.rotation)
-            ? component.rotation
-            : Phaser.Math.DegToRad(component.angle || 0);
-        console.log('Component:', comp);
+        // get container angle in radians (Phaser keeps both .angle and .rotation)
+        const theta = (typeof component.rotation === 'number' && component.rotation) ? component.rotation : Phaser.Math.DegToRad(component.angle || 0);
+        console.log("Component:",comp);
 
         const cos = Math.cos(theta);
         const sin = Math.sin(theta);
@@ -468,6 +396,7 @@ export default class WorkspaceScene extends Phaser.Scene {
             this.graph.addNode(comp.end);
         }
 
+        // debug dots are top-level objects (not children). update their positions
         const startDot = component.getData('startDot');
         const endDot = component.getData('endDot');
         if (startDot && comp.start) { startDot.x = comp.start.x; startDot.y = comp.start.y; }
@@ -483,7 +412,7 @@ export default class WorkspaceScene extends Phaser.Scene {
 
         switch (type) {
             case 'baterija':
-                id = 'bat_' + this.getRandomInt(1000, 9999);
+                id = "bat_" + this.getRandomInt(1000, 9999);
                 comp = new Battery(
                     id,
                     new Node(id + '_start', -40, 0),
@@ -498,20 +427,21 @@ export default class WorkspaceScene extends Phaser.Scene {
                     .setDisplaySize(100, 100);
                 component.add(componentImage);
 
-                comp.container = component;
-                comp.image = componentImage;
+                comp.container = component;       // reference to Phaser container
+                comp.image = componentImage;      // reference to Phaser image
+
 
                 component.setData('logicComponent', comp);
                 break;
 
             case 'upor':
-                id = 'res_' + this.getRandomInt(1000, 9999);
+                id = "res_" + this.getRandomInt(1000, 9999);
                 comp = new Resistor(
                     id,
                     new Node(id + '_start', -40, 0),
                     new Node(id + '_end', 40, 0),
                     1.5
-                );
+                )
                 comp.type = 'resistor';
                 comp.localStart = { x: -40, y: 0 };
                 comp.localEnd = { x: 40, y: 0 };
@@ -520,14 +450,14 @@ export default class WorkspaceScene extends Phaser.Scene {
                     .setDisplaySize(100, 100);
                 component.add(componentImage);
 
-                comp.container = component;
-                comp.image = componentImage;
+                comp.container = component;       // reference to Phaser container
+                comp.image = componentImage;      // reference to Phaser image
 
-                component.setData('logicComponent', comp);
+                component.setData('logicComponent', comp)
                 break;
 
             case 'svetilka':
-                id = 'bulb_' + this.getRandomInt(1000, 9999);
+                id = "bulb_" + this.getRandomInt(1000, 9999);
                 comp = new Bulb(
                     id,
                     new Node(id + '_start', -40, 0),
@@ -541,20 +471,20 @@ export default class WorkspaceScene extends Phaser.Scene {
                     .setDisplaySize(100, 100);
                 component.add(componentImage);
 
-                comp.container = component;
-                comp.image = componentImage;
+                comp.container = component;       // reference to Phaser container
+                comp.image = componentImage;      // reference to Phaser image
 
                 component.setData('logicComponent', comp);
                 break;
 
             case 'stikalo-on':
-                id = 'switch_' + this.getRandomInt(1000, 9999);
+                id = "switch_" + this.getRandomInt(1000, 9999);
                 comp = new Switch(
                     id,
-                    new Node(id + '_start', -40, 0),
-                    new Node(id + '_end', 40, 0),
+                    new Node(id + "_start", -40, 0),
+                    new Node(id + "_end", 40, 0),
                     true
-                );
+                )
                 comp.type = 'switch';
                 comp.localStart = { x: -40, y: 0 };
                 comp.localEnd = { x: 40, y: 0 };
@@ -563,20 +493,20 @@ export default class WorkspaceScene extends Phaser.Scene {
                     .setDisplaySize(100, 100);
                 component.add(componentImage);
 
-                comp.container = component;
-                comp.image = componentImage;
+                comp.container = component;       // reference to Phaser container
+                comp.image = componentImage;      // reference to Phaser image
 
-                component.setData('logicComponent', comp);
+                component.setData('logicComponent', comp)
                 break;
 
             case 'stikalo-off':
-                id = 'switch_' + this.getRandomInt(1000, 9999);
+                id = "switch_" + this.getRandomInt(1000, 9999);
                 comp = new Switch(
                     id,
-                    new Node(id + '_start', -40, 0),
-                    new Node(id + '_end', 40, 0),
+                    new Node(id + "_start", -40, 0),
+                    new Node(id + "_end", 40, 0),
                     false
-                );
+                )
                 comp.type = 'switch';
                 comp.localStart = { x: -40, y: 0 };
                 comp.localEnd = { x: 40, y: 0 };
@@ -585,14 +515,15 @@ export default class WorkspaceScene extends Phaser.Scene {
                     .setDisplaySize(100, 100);
                 component.add(componentImage);
 
-                comp.container = component;
-                comp.image = componentImage;
+                comp.container = component;       // reference to Phaser container
+                comp.image = componentImage;      // reference to Phaser image
 
-                component.setData('logicComponent', comp);
+
+                component.setData('logicComponent', comp)
                 break;
 
             case 'žica':
-                id = 'wire_' + this.getRandomInt(1000, 9999);
+                id = "wire_" + this.getRandomInt(1000, 9999);
                 comp = new Wire(
                     id,
                     new Node(id + '_start', -40, 0),
@@ -606,36 +537,36 @@ export default class WorkspaceScene extends Phaser.Scene {
                     .setDisplaySize(100, 100);
                 component.add(componentImage);
 
-                comp.container = component;
-                comp.image = componentImage;
+                comp.container = component;       // reference to Phaser container
+                comp.image = componentImage;      // reference to Phaser image
 
                 component.setData('logicComponent', comp);
                 break;
-
             case 'ampermeter':
-                id = 'ammeter_' + this.getRandomInt(1000, 9999);
+                id = "ammeter_" + this.getRandomInt(1000, 9999);
                 componentImage = this.add.image(0, 0, 'ampermeter')
                     .setOrigin(0.5)
                     .setDisplaySize(100, 100);
                 component.add(componentImage);
-                component.setData('logicComponent', null);
+                component.setData('logicComponent', null)
                 break;
-
             case 'voltmeter':
-                id = 'voltmeter_' + this.getRandomInt(1000, 9999);
+                id = "voltmeter_" + this.getRandomInt(1000, 9999);
                 componentImage = this.add.image(0, 0, 'voltmeter')
                     .setOrigin(0.5)
                     .setDisplaySize(100, 100);
                 component.add(componentImage);
-                component.setData('logicComponent', null);
+                component.setData('logicComponent', null)
                 break;
         }
 
         component.on('pointerover', () => {
             if (component.getData('isInPanel')) {
+                // prikaži info okno
                 const details = this.getComponentDetails(type);
                 this.infoText.setText(details);
 
+                // zraven komponente
                 this.infoWindow.x = x + 120;
                 this.infoWindow.y = y;
                 this.infoWindow.setVisible(true);
@@ -650,6 +581,7 @@ export default class WorkspaceScene extends Phaser.Scene {
             component.setScale(1);
         });
 
+        // Label
         const label = this.add.text(0, 30, type, {
             fontSize: '11px',
             color: '#fff',
@@ -661,6 +593,7 @@ export default class WorkspaceScene extends Phaser.Scene {
         component.setSize(70, 70);
         component.setInteractive({ draggable: true, useHandCursor: true });
 
+        // shrani originalno pozicijo in tip
         component.setData('originalX', x);
         component.setData('originalY', y);
         component.setData('type', type);
@@ -677,7 +610,7 @@ export default class WorkspaceScene extends Phaser.Scene {
         });
 
         component.on('drag', (pointer, dragX, dragY) => {
-            if (this.runSimulacija) return;
+            if(this.runSimulacija) return
             component.x = dragX;
             component.y = dragY;
         });
@@ -686,40 +619,53 @@ export default class WorkspaceScene extends Phaser.Scene {
             const isInPanel = component.x < 200;
 
             if (isInPanel && !component.getData('isInPanel')) {
-                // case: dragged back to panel -> just destroy the copy
+                // če je ob strani, se odstrani
                 component.destroy();
             } else if (!isInPanel && component.getData('isInPanel')) {
-                // case: new component dragged from panel to workspace
+                // s strani na mizo
+                const snapped = this.snapToGrid(component.x, component.y);
+                component.x = snapped.x;
+                component.y = snapped.y;
+
+                const comp = component.getData('logicComponent');
+                if (comp) {
+                    console.log("Component: " + comp)
+                    this.graph.addComponent(comp);
+
+                    // Add start/end nodes to graph if they exist
+                    if (comp.start) this.graph.addNode(comp.start);
+                    if (comp.end) this.graph.addNode(comp.end);
+                }
+
+                this.updateLogicNodePositions(component);
+
+                component.setData('isRotated', false);
                 component.setData('isInPanel', false);
 
-                // hide popup when component is used
-                this.infoWindow.setVisible(false);
-
-                // create a fresh panel item to replace the one you used
-                const origX = component.getData('originalX');
-                const origY = component.getData('originalY');
-                const type = component.getData('type');
-                const color = component.getData('color');
-                this.createComponent(origX, origY, type, color);
-
-                // snap to grid and register in placedComponents / graph
-                const snapped = this.snapToGrid(component.x, component.y);
-                component.x = snapped.x;
-                component.y = snapped.y;
+                this.createComponent(
+                    component.getData('originalX'),
+                    component.getData('originalY'),
+                    component.getData('type'),
+                    component.getData('color')
+                );
 
                 this.placedComponents.push(component);
-                this.updateLogicNodePositions(component);
+
             } else if (!component.getData('isInPanel')) {
-                // case: moving an already placed component
+                // na mizi in se postavi na mrežo
                 const snapped = this.snapToGrid(component.x, component.y);
                 component.x = snapped.x;
                 component.y = snapped.y;
+
                 this.updateLogicNodePositions(component);
+
             } else {
-                // case: still in panel -> reset position
+                // postavi se nazaj na originalno mesto
                 component.x = component.getData('originalX');
                 component.y = component.getData('originalY');
+
                 this.updateLogicNodePositions(component);
+
             }
 
             this.time.delayedCall(500, () => {
@@ -728,30 +674,22 @@ export default class WorkspaceScene extends Phaser.Scene {
         });
 
         component.on('pointerdown', (pointer) => {
-            // selection
-            if (!component.getData('isInPanel')) {
-                this.selectedComponent = component;
-            }
-
-            if (this.runSimulacija) {
-                switch (component.data.list.logicComponent?.type) {
-                    case 'switch':
-                        component.data.list.logicComponent.is_on =
-                            !component.data.list.logicComponent.is_on;
-                        const newTexture = component.data.list.logicComponent.is_on
-                            ? 'stikalo-on'
-                            : 'stikalo-off';
+            if (this.runSimulacija){
+                // za karkoli je interactive med simulacijo
+                // console.log("comp",component.data.list.logicComponent.is_on);
+                switch (component.data.list.logicComponent.type){
+                    case "switch":
+                        component.data.list.logicComponent.is_on =!component.data.list.logicComponent.is_on
+                        const newTexture = component.data.list.logicComponent.is_on ? 'stikalo-on' : 'stikalo-off';
                         component.data.list.logicComponent.image.setTexture(newTexture);
                         break;
                 }
-                return;
             }
-
-            // rotate on right click
-            if (pointer.rightButtonDown()) {
+            else if (pointer.rightButtonDown()) {
                 if (!component.getData('isInPanel')) {
+
                     const currentRotation = component.getData('rotation');
-                    const newRotation = currentRotation === 90 ? 0 : 90;
+                    let newRotation = currentRotation === 90 ? 0 : 90;
 
                     component.setData('rotation', newRotation);
 
@@ -768,25 +706,8 @@ export default class WorkspaceScene extends Phaser.Scene {
                         }
                     });
                 }
-                return;
             }
-
-            // delete on D while clicking a placed component
-            if (this.keyD.isDown && !component.getData('isInPanel')) {
-                const lc = component.getData('logicComponent');
-                if (lc) {
-                    if (this.graph.removeComponent) this.graph.removeComponent(lc);
-                    if (lc.start && this.graph.removeNode) this.graph.removeNode(lc.start);
-                    if (lc.end && this.graph.removeNode) this.graph.removeNode(lc.end);
-                }
-
-                const idx = this.placedComponents.indexOf(component);
-                if (idx !== -1) this.placedComponents.splice(idx, 1);
-
-                if (this.selectedComponent === component) {
-                    this.selectedComponent = null;
-                }
-
+            else if(this.keyD.isDown) {
                 component.destroy();
             }
         });
@@ -804,14 +725,15 @@ export default class WorkspaceScene extends Phaser.Scene {
     checkCircuit() {
         const currentChallenge = this.challenges[this.currentChallengeIndex];
         const placedTypes = this.placedComponents.map(comp => comp.getData('type'));
-        console.log('components', placedTypes);
+        console.log("components", placedTypes);
         this.checkText.setStyle({ color: '#cc0000' });
-
+        // preverjas ce so vse komponente na mizi
         if (!currentChallenge.requiredComponents.every(req => placedTypes.includes(req))) {
             this.checkText.setText('Manjkajo komponente za krog.');
             return;
         }
 
+        // je pravilna simulacija
         if (this.sim === undefined) {
             this.checkText.setText('Zaženi simlacijo');
             return;
@@ -822,19 +744,34 @@ export default class WorkspaceScene extends Phaser.Scene {
             return;
         }
 
+
+        // je zaprt krog
+
         this.checkText.setStyle({ color: '#00aa00' });
         this.checkText.setText('Čestitke! Krog je pravilen.');
         this.addPoints(10);
 
-        const currentTheory = currentChallenge.theory;
-        if (currentTheory) {
-            this.showTheory(currentTheory);
-        } else {
+        if (currentChallenge.theory) {
+            this.showTheory(currentChallenge.theory);
+        }
+        else {
             this.checkText.setStyle({ color: '#00aa00' });
             this.checkText.setText('Čestitke! Krog je pravilen.');
             this.addPoints(10);
             this.time.delayedCall(2000, () => this.nextChallenge());
         }
+        // this.placedComponents.forEach(comp => comp.destroy());
+        // this.placedComponents = [];
+        // this.time.delayedCall(2000, () => this.nextChallenge());
+        // const isCorrect = currentChallenge.requiredComponents.every(req => placedTypes.includes(req));
+        // if (isCorrect) {
+        //   this.checkText.setText('Čestitke! Krog je pravilen.');
+        //   this.addPoints(10);
+        //   this.time.delayedCall(2000, () => this.nextChallenge());
+        // }
+        // else {
+        //   this.checkText.setText('Krog ni pravilen. Poskusi znova.');
+        // }
     }
 
     nextChallenge() {
@@ -895,6 +832,8 @@ export default class WorkspaceScene extends Phaser.Scene {
                 this.placedComponents = [];
                 this.nextChallenge();
             });
+
+
     }
 
     hideTheory() {
@@ -911,4 +850,24 @@ export default class WorkspaceScene extends Phaser.Scene {
             this.continueButton = null;
         }
     }
+
 }
+
+const config = {
+    type: Phaser.AUTO,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    parent: 'game-container',
+    backgroundColor: '#f0f0f0',
+    scale: {
+        mode: Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    },
+    scene: [LabScene, WorkspaceScene],
+    physics: {
+        default: 'arcade',
+        arcade: {
+            debug: false
+        }
+    }
+};
