@@ -97,7 +97,7 @@ class CircuitGraph {
                     break;
             }
 
-            await this.sleep(500)
+            await this.sleep(250)
 
             switch (comp.type) {
                 case "battery":
@@ -120,7 +120,7 @@ class CircuitGraph {
                     break;
             }
 
-            console.log("in check", comp)
+            // console.log("in check", comp)
 
             visitedComps.add(comp);
 
@@ -131,7 +131,7 @@ class CircuitGraph {
 
             if (next.type === 'switch' && !next.is_on) continue;
 
-            if (this.hasClosedLoop(next, target, visitedComps)) {
+            if (await this.hasClosedLoop(next, target, visitedComps)) {
                 return true;
             }
 
@@ -143,7 +143,7 @@ class CircuitGraph {
     }
 
 
-    simulate() {
+    async simulate() {
         const battery = this.components.find(c => c.type === 'battery');
         if (!battery) {
             console.log("No battery found.");
@@ -166,7 +166,7 @@ class CircuitGraph {
         }
         console.log('----------------------------------------');
 
-        const closed = this.hasClosedLoop(start, end);
+        const closed = await this.hasClosedLoop(start, end);
 
         if (closed) {
             console.log("Circuit closed! Current flows.");

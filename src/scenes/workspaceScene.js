@@ -211,22 +211,20 @@ export default class WorkspaceScene extends Phaser.Scene {
         };
 
         makeButton(width - 140, 75, 'Lestvica', () => this.scene.start('ScoreboardScene', { cameFromMenu: false }), "Poglej kako se odrežeš proti ostalim igralcem!");
-        makeButton(width - 140, 125, 'Simulacija tokokroga', () => {
-            this.connected = this.graph.simulate()
+        makeButton(width - 140, 125, 'Simulacija tokokroga', async () => {
+            this.connected = await this.graph.simulate()
             if (this.connected == 1) {
-                this.checkText.setStyle({ color: '#00aa00' });
+                this.checkText.setStyle({color: '#00aa00'});
                 this.checkText.setText('Električni tok je sklenjen');
                 this.sim = true;
                 return;
             }
-            this.checkText.setStyle({ color: '#cc0000' });
+            this.checkText.setStyle({color: '#cc0000'});
             if (this.connected == -1) {
                 this.checkText.setText('Manjka ti baterija');
-            }
-            else if (this.connected == -2) {
+            } else if (this.connected == -2) {
                 this.checkText.setText('Stikalo je izklopljeno');
-            }
-            else if (this.connected == 0) {
+            } else if (this.connected == 0) {
                 this.checkText.setText('Električni tok ni sklenjen');
             }
             this.sim = false;
