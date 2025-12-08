@@ -681,7 +681,7 @@ export default class WorkspaceScene extends Phaser.Scene {
 
             if (isInPanel && !component.getData('isInPanel')) {
                 // če je ob strani, se odstrani
-                component.destroy();
+                this.deletePlacedComponent(component);
             } else if (!isInPanel && component.getData('isInPanel')) {
                 // s strani na mizo
                 const snapped = this.snapToGrid(component.x, component.y);

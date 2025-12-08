@@ -85,7 +85,6 @@ class CircuitGraph {
                 case "bulb":
                     comp.image.setTexture("svetilka_on");
                     break;
-
                 case "resistor":
                     comp.image.setTexture("upor_on");
                     break;
@@ -94,6 +93,12 @@ class CircuitGraph {
                         comp.image.setTexture("stikalo-on_on");
                     else
                         comp.image.setTexture("stikalo-off_on");
+                    break;
+                case "ampermeter":
+                    comp.image.setTexture("ampermeter_on");
+                    break;
+                case "voltmeter":
+                    comp.image.setTexture("voltmeter_on");
                     break;
             }
 
@@ -117,6 +122,12 @@ class CircuitGraph {
                         comp.image.setTexture("stikalo-on");
                     else
                         comp.image.setTexture("stikalo-off");
+                    break;
+                case "ampermeter":
+                    comp.image.setTexture("ampermeter");
+                    break;
+                case "voltmeter":
+                    comp.image.setTexture("voltmeter");
                     break;
             }
 
