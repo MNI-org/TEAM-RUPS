@@ -11,6 +11,8 @@ import { Resistor } from '../components/resistor';
 export default class WorkspaceScene extends Phaser.Scene {
     constructor() {
         super('WorkspaceScene');
+        // simple debug flag
+        this.debugEnabled = true;
     }
 
     init() {
@@ -41,7 +43,22 @@ export default class WorkspaceScene extends Phaser.Scene {
     create() {
         const { width, height } = this.cameras.main;
 
-        //d key za delete
+        this.debugText = this.add.text(10, 10, '', {
+            fontSize: '12px',
+            color: '#00ff00',
+            backgroundColor: '#00000088',
+            padding: { x: 6, y: 4 }
+        }).setDepth(2000).setScrollFactor(0);
+
+        // Q za debug
+        this.keyDebug = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
+        this.keyDebug.on('down', () => {
+            this.debugEnabled = !this.debugEnabled;
+            this.debugText.setVisible(this.debugEnabled);
+            if (this.debugEnabled) this.updateDebugInfo();
+        });
+
+        // d key za delete
         this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
         this.keyShift = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
         this.keyDelete = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DELETE);
@@ -423,6 +440,8 @@ export default class WorkspaceScene extends Phaser.Scene {
         const endDot = component.getData('endDot');
         if (startDot && comp.start) { startDot.x = comp.start.x; startDot.y = comp.start.y; }
         if (endDot && comp.end) { endDot.x = comp.end.x; endDot.y = comp.end.y; }
+
+        this.updateDebugInfo();
     }
 
     deletePlacedComponent(component) {
@@ -459,8 +478,8 @@ export default class WorkspaceScene extends Phaser.Scene {
             this.selectedComponent = null;
         }
 
-        // finally destroy the Phaser object
         component.destroy();
+        this.updateDebugInfo();
     }
 
     createComponent(x, y, type, color) {
@@ -731,6 +750,7 @@ export default class WorkspaceScene extends Phaser.Scene {
 
             this.time.delayedCall(500, () => {
                 component.setData('isDragging', false);
+                this.updateDebugInfo();
             });
         });
 
@@ -789,6 +809,31 @@ export default class WorkspaceScene extends Phaser.Scene {
         });
     }
 
+    updateDebugInfo() {
+        if (!this.debugEnabled || !this.debugText) return;
+
+        const placedCount = Array.isArray(this.placedComponents) ? this.placedComponents.length : 0;
+        const simState = this.sim === undefined ? 'not run' : this.sim ? 'connected' : 'not connected';
+        const sel = this.selectedComponent;
+        const selType = sel ? sel.getData('type') : 'none';
+        const logic = sel ? sel.getData('logicComponent') : null;
+        const logicType = logic && logic.type ? logic.type : 'n/a';
+        const startNode = logic && logic.start ? `${logic.start.x},${logic.start.y}` : 'n/a';
+        const endNode = logic && logic.end ? `${logic.end.x},${logic.end.y}` : 'n/a';
+
+        this.debugText.setText(
+            [
+                `Challenge: ${this.currentChallengeIndex}`,
+                `Placed: ${placedCount}`,
+                `Sim: ${simState}`,
+                `Selected type: ${selType}`,
+                `Logic type: ${logicType}`,
+                `Start node: ${startNode}`,
+                `End node: ${endNode}`
+            ].join('\n')
+        );
+    }
+
     checkCircuit() {
         const currentChallenge = this.challenges[this.currentChallengeIndex];
         const placedTypes = this.placedComponents.map(comp => comp.getData('type'));
@@ -797,17 +842,20 @@ export default class WorkspaceScene extends Phaser.Scene {
         // preverjas ce so vse komponente na mizi
         if (!currentChallenge.requiredComponents.every(req => placedTypes.includes(req))) {
             this.checkText.setText('Manjkajo komponente za krog.');
+            this.updateDebugInfo();
             return;
         }
 
         // je pravilna simulacija
         if (this.sim === undefined) {
             this.checkText.setText('Zaženi simlacijo');
+            this.updateDebugInfo();
             return;
         }
 
         if (this.sim === false) {
             this.checkText.setText('Električni krog ni sklenjen. Preveri kako si ga sestavil');
+            this.updateDebugInfo();
             return;
         }
 
@@ -818,6 +866,7 @@ export default class WorkspaceScene extends Phaser.Scene {
         this.checkText.setText('Čestitke! Krog je pravilen.');
         this.addPoints(10);
         this.addPoints(10);
+        this.updateDebugInfo();
 
         if (currentChallenge.theory) {
             this.showTheory(currentChallenge.theory);
